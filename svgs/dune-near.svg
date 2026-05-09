@@ -1,0 +1,11 @@
+<svg viewBox="0 0 1600 380" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="duneNear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#080518"/>
+      <stop offset="100%" stop-color="#03020a"/>
+    </linearGradient>
+  </defs>
+  <path d="M0,200 C140,120 320,100 520,160 C720,220 880,280 1080,240 C1280,200 1440,140 1600,180 L1600,380 L0,380 Z" fill="url(#duneNear)"/>
+  <!-- soft moonlit highlight on the crests -->
+  <path d="M0,200 C140,120 320,100 520,160 C720,220 880,280 1080,240 C1280,200 1440,140 1600,180" fill="none" stroke="rgba(170,160,210,0.18)" stroke-width="1"/>
+</svg>

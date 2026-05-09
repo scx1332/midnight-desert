@@ -1,0 +1,9 @@
+<svg viewBox="0 0 720 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+  <defs>
+    <linearGradient id="moundGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#040310"/>
+      <stop offset="100%" stop-color="#000005"/>
+    </linearGradient>
+  </defs>
+  <path d="M0,60 C100,20 220,10 360,30 C500,50 620,18 720,52 L720,120 L0,120 Z" fill="url(#moundGrad)"/>
+</svg>

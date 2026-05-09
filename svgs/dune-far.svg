@@ -1,0 +1,9 @@
+<svg viewBox="0 0 1600 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="duneFar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d1740"/>
+      <stop offset="100%" stop-color="#15102f"/>
+    </linearGradient>
+  </defs>
+  <path d="M0,140 C120,90 240,80 360,110 C480,140 580,170 720,150 C860,130 980,80 1120,95 C1260,110 1380,150 1500,135 C1560,128 1600,120 1600,120 L1600,220 L0,220 Z" fill="url(#duneFar)"/>
+</svg>
