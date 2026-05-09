@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Midnight Desert</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="scene" data-screen-label="Midnight Desert">
+
+  <!-- SKY -->
+  <div class="sky"></div>
+
+  <!-- STARS -->
+  <div class="stars">
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" id="starfield"></svg>
+  </div>
+
+  <!-- HAZE near horizon -->
+  <div class="haze"></div>
+
+  <!-- MOON -->
+  <div class="moon-wrap">
+    <div class="moon-glow"></div>
+    <div class="moon">
+      <div class="moon-craters">
+        <!-- ambient maria / craters -->
+        <div class="crater" style="width:36px;height:36px;top:74%;left:24%;opacity:0.55;"></div>
+        <div class="crater" style="width:22px;height:22px;top:82%;left:48%;opacity:0.5;"></div>
+        <div class="crater" style="width:48px;height:48px;top:64%;left:66%;opacity:0.55;"></div>
+        <div class="crater" style="width:14px;height:14px;top:18%;left:46%;opacity:0.5;"></div>
+        <div class="crater" style="width:18px;height:18px;top:12%;left:72%;opacity:0.45;"></div>
+        <div class="crater" style="width:10px;height:10px;top:24%;left:82%;opacity:0.45;"></div>
+        <div class="crater" style="width:12px;height:12px;top:50%;left:84%;opacity:0.4;"></div>
+        <div class="crater" style="width:9px;height:9px;top:84%;left:74%;opacity:0.4;"></div>
+        <div class="crater" style="width:8px;height:8px;top:14%;left:20%;opacity:0.4;"></div>
+
+        <!-- delicate face: low-contrast maria so it still reads as natural lunar texture -->
+        <div class="moon-face">
+          <div class="m-eye" style="width:54px;height:44px;top:28%;left:18%;"></div>
+          <div class="m-eye" style="width:50px;height:40px;top:30%;left:58%;"></div>
+          <div class="m-mouth-crater"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BIRDS (background, slow) -->
+  <div class="birds" id="birds"></div>
+
+  <!-- DUNES -->
+  <div class="dunes">
+    <div class="dune-layer" data-svg="svgs/dune-far.svg" style="bottom: 33vh; opacity: 0.85;"></div>
+    <div class="dune-layer" data-svg="svgs/dune-mid.svg" style="bottom: 22vh;"></div>
+    <div class="dune-layer" data-svg="svgs/dune-near.svg" style="bottom: 0;"></div>
+  </div>
+
+  <!-- FOREGROUND OASIS -->
+  <div class="oasis">
+
+    <!-- sand mound -->
+    <div class="mound" data-svg="svgs/mound.svg"></div>
+
+    <!-- animated oasis glow -->
+    <div class="oasis-glow"></div>
+
+    <!-- water pool -->
+    <div class="pool"></div>
+
+    <!-- grass tufts -->
+    <div class="grass" data-svg="svgs/grass-left.svg" style="left:8%; width:60px; height:26px;"></div>
+    <div class="grass" data-svg="svgs/grass-right.svg" style="right:7%; width:70px; height:22px;"></div>
+
+    <!-- palms -->
+    <div class="palms">
+      <div class="palm palm-1" data-svg="svgs/palm-1.svg"></div>
+      <div class="palm palm-2" data-svg="svgs/palm-2.svg"></div>
+      <div class="palm palm-3" data-svg="svgs/palm-3.svg"></div>
+      <div class="palm palm-4" data-svg="svgs/palm-4.svg"></div>
+    </div>
+  </div>
+
+  <!-- vignette -->
+  <div class="vignette"></div>
+
+</div>
+
+<script src="scene.js"></script>
+
+</body>
+</html>

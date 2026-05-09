@@ -1,0 +1,11 @@
+<svg viewBox="0 0 1600 260" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="duneMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#120c2a"/>
+      <stop offset="100%" stop-color="#0b0820"/>
+    </linearGradient>
+  </defs>
+  <path d="M0,160 C160,80 280,60 440,100 C600,140 720,210 880,180 C1040,150 1180,90 1340,120 C1460,143 1600,180 1600,180 L1600,260 L0,260 Z" fill="url(#duneMid)"/>
+  <!-- moonlit ridge highlight -->
+  <path d="M0,160 C160,80 280,60 440,100 C600,140 720,210 880,180 C1040,150 1180,90 1340,120 C1460,143 1600,180 1600,180" fill="none" stroke="rgba(190,180,220,0.22)" stroke-width="1.2"/>
+</svg>

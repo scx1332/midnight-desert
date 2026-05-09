@@ -1,0 +1,27 @@
+<svg viewBox="0 0 150 280" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+  <!-- trunk -->
+  <path d="M72,280 C70,220 76,160 78,100 C80,60 76,30 74,10" stroke="#020108" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- trunk segments -->
+  <g stroke="#0a0612" stroke-width="1" opacity="0.6">
+    <line x1="68" y1="240" x2="80" y2="238"/>
+    <line x1="69" y1="210" x2="81" y2="208"/>
+    <line x1="71" y1="180" x2="83" y2="178"/>
+    <line x1="73" y1="150" x2="84" y2="148"/>
+    <line x1="74" y1="120" x2="85" y2="118"/>
+    <line x1="75" y1="90" x2="85" y2="88"/>
+    <line x1="75" y1="60" x2="84" y2="58"/>
+  </g>
+  <!-- fronds -->
+  <g fill="#000" stroke="#000" stroke-linejoin="round">
+    <path d="M74,12 C50,2 22,6 4,28 C26,18 50,18 70,26 Z"/>
+    <path d="M74,12 C100,0 132,6 148,30 C124,18 98,18 78,26 Z"/>
+    <path d="M74,12 C58,18 36,40 20,72 C46,52 64,40 74,32 Z"/>
+    <path d="M74,12 C92,18 116,42 132,78 C108,54 88,42 78,32 Z"/>
+    <path d="M74,12 C66,28 58,58 56,92 C66,68 72,46 76,30 Z"/>
+    <path d="M74,12 C82,30 90,60 96,96 C84,68 78,46 76,30 Z"/>
+  </g>
+  <!-- coconuts -->
+  <circle cx="72" cy="20" r="3" fill="#000"/>
+  <circle cx="78" cy="22" r="3" fill="#000"/>
+  <circle cx="68" cy="24" r="2.5" fill="#000"/>
+</svg>

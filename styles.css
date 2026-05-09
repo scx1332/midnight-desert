@@ -1,0 +1,367 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #05060f;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- SKY ---------- */
+.sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 72% 28%, rgba(120, 110, 180, 0.22) 0%, rgba(60, 50, 110, 0.05) 35%, transparent 70%),
+    radial-gradient(ellipse 120% 80% at 50% 100%, rgba(90, 70, 120, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg,
+      #050616 0%,
+      #0a0a25 22%,
+      #15123a 48%,
+      #251a45 72%,
+      #2e1f4d 90%,
+      #38244f 100%);
+}
+
+/* ---------- STARS ---------- */
+.stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.stars svg { width: 100%; height: 100%; display: block; }
+.star { fill: #fff; }
+@keyframes twinkle {
+  0%, 100% { opacity: var(--o, 0.8); }
+  50%      { opacity: 0.15; }
+}
+
+/* ---------- MOON ---------- */
+.moon-wrap {
+  position: absolute;
+  top: 9%;
+  right: 18%;
+  width: 280px;
+  height: 280px;
+  pointer-events: none;
+}
+.moon-glow {
+  position: absolute;
+  inset: -120%;
+  background: radial-gradient(circle at center,
+    rgba(255, 240, 210, 0.28) 0%,
+    rgba(245, 220, 180, 0.15) 18%,
+    rgba(180, 150, 200, 0.08) 35%,
+    rgba(120, 100, 160, 0.03) 55%,
+    transparent 70%);
+  filter: blur(2px);
+}
+.moon {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 38%, #fff8e8 0%, #f5e6c4 35%, #e8d2a8 65%, #c9b088 100%);
+  box-shadow:
+    0 0 60px 8px rgba(255, 240, 210, 0.25),
+    0 0 120px 20px rgba(220, 200, 240, 0.12),
+    inset -20px -25px 50px rgba(120, 90, 110, 0.35),
+    inset 12px 14px 30px rgba(255, 250, 230, 0.4);
+}
+.moon-craters {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  opacity: 0.55;
+}
+.crater {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(160, 130, 110, 0.45) 0%, rgba(140, 110, 90, 0.25) 60%, transparent 100%);
+}
+
+/* delicate moon face — keep all values low opacity so it reads as natural maria */
+.moon-face {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: rotate(14deg);
+  transform-origin: 50% 50%;
+}
+.m-eye {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 45% 40%,
+    rgba(110, 85, 80, 0.42) 0%,
+    rgba(130, 100, 90, 0.28) 45%,
+    rgba(150, 120, 105, 0.12) 75%,
+    transparent 100%);
+  filter: blur(1.2px);
+}
+.m-nose {
+  position: absolute;
+  border-radius: 50% / 40%;
+  background: radial-gradient(ellipse at 50% 50%,
+    rgba(130, 100, 90, 0.22) 0%,
+    rgba(150, 120, 105, 0.12) 60%,
+    transparent 100%);
+  filter: blur(1.4px);
+}
+.m-mouth {
+  position: absolute;
+  width: 76%;
+  height: 30%;
+  top: 56%;
+  left: 12%;
+  filter: blur(0.8px);
+  opacity: 0.9;
+}
+.m-mouth-crater {
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  top: 68%;
+  left: 41%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%,
+    rgba(110, 85, 75, 0.55) 0%,
+    rgba(140, 110, 90, 0.35) 55%,
+    rgba(170, 140, 115, 0.15) 80%,
+    transparent 100%);
+  filter: blur(1px);
+}
+
+/* ---------- BIRDS ---------- */
+.birds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bird-flock {
+  position: absolute;
+  will-change: transform;
+}
+.bird {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.bird svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.bird path {
+  fill: none;
+  stroke: #0a0a1a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes flyAcross {
+  from { transform: translateX(-12vw); }
+  to   { transform: translateX(112vw); }
+}
+@keyframes flap {
+  0%, 100% { d: path("M 0 8 Q 8 0 16 8 Q 24 0 32 8"); }
+  50%      { d: path("M 0 4 Q 8 12 16 4 Q 24 12 32 4"); }
+}
+/* Fallback flap via transform on the wing path container */
+.bird .wing {
+  transform-origin: center;
+  animation: wingbeat 1.4s ease-in-out infinite;
+}
+@keyframes wingbeat {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(0.35); }
+}
+
+/* ---------- DUNES (layered, far → near) ---------- */
+.dunes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.dune-layer {
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: 0;
+  width: 104%;
+}
+.dune-layer svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ---------- FOREGROUND OASIS ---------- */
+.oasis {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 720px;
+  max-width: 92vw;
+  height: 38vh;
+  min-height: 280px;
+  pointer-events: none;
+}
+
+/* oasis glow halo (animated) */
+.oasis-glow {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 38%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(180, 200, 240, 0.28) 0%,
+    rgba(140, 160, 220, 0.16) 28%,
+    rgba(100, 120, 200, 0.08) 50%,
+    transparent 75%);
+  filter: blur(6px);
+  pointer-events: none;
+  animation: oasisGlow 5.5s ease-in-out infinite;
+}
+@keyframes oasisGlow {
+  0%, 100% { opacity: 0.65; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.08); }
+}
+
+/* water pool */
+.pool {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78%;
+  height: 22%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(180, 200, 230, 0.22) 0%,
+      rgba(110, 130, 180, 0.18) 30%,
+      rgba(40, 50, 90, 0.45) 70%,
+      rgba(15, 12, 35, 0.85) 100%);
+  box-shadow:
+    0 -2px 18px rgba(180, 190, 230, 0.18),
+    inset 0 4px 14px rgba(220, 230, 250, 0.12),
+    inset 0 -8px 20px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.pool::before {
+  /* moon reflection */
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 240, 210, 0.55) 0%,
+    rgba(255, 240, 210, 0.18) 50%,
+    transparent 100%);
+  filter: blur(2px);
+  animation: shimmer 6s ease-in-out infinite;
+}
+.pool::after {
+  /* gentle horizontal ripple highlight */
+  content: "";
+  position: absolute;
+  top: 42%;
+  left: 14%;
+  right: 14%;
+  height: 1.5px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(220, 220, 240, 0.35) 50%,
+    transparent 100%);
+  filter: blur(0.5px);
+  animation: ripple 7s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%, 100% { opacity: 0.85; transform: translateX(-50%) scaleX(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scaleX(1.06); }
+}
+@keyframes ripple {
+  0%, 100% { opacity: 0.4; transform: translateX(0); }
+  50%      { opacity: 0.8; transform: translateX(8px); }
+}
+
+/* sand mound around oasis */
+.mound {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32%;
+}
+
+/* palms */
+.palms {
+  position: absolute;
+  inset: 0;
+}
+.palm {
+  position: absolute;
+  bottom: 14%;
+  transform-origin: bottom center;
+}
+.palm svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.palm-1 { left: -7%; width: 150px; height: 78%; animation: sway 7s ease-in-out infinite; }
+.palm-2 { left: 3%;  width: 110px; height: 62%; animation: sway 8.5s ease-in-out infinite reverse; animation-delay: -1.2s; }
+.palm-3 { right: -8%; width: 170px; height: 86%; animation: sway 9s ease-in-out infinite; animation-delay: -2s; }
+.palm-4 { right: 2%; width: 95px;  height: 54%; animation: sway 7.8s ease-in-out infinite reverse; animation-delay: -0.6s; }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50%      { transform: rotate(1.2deg); }
+}
+
+/* small grass tufts */
+.grass {
+  position: absolute;
+  bottom: 5%;
+  pointer-events: none;
+}
+.grass svg { width: 100%; height: 100%; overflow: visible; }
+
+/* subtle film grain via vignette */
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 45%, transparent 50%, rgba(0,0,0,0.55) 100%);
+}
+
+/* haze along horizon line behind dunes for depth */
+.haze {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 36vh;
+  height: 12vh;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(70, 60, 110, 0.18) 60%,
+    rgba(50, 40, 90, 0.28) 100%);
+  filter: blur(8px);
+  pointer-events: none;
+}
