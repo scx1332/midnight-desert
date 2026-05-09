@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Midnight Desert</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a25; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #__bundler_loading { position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
+    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #0a0a25; z-index: 9999; }
+    #__bundler_thumbnail svg { width: 100%; height: 100%; object-fit: contain; }
+    #__bundler_placeholder { color: #999; font-size: 14px; }
+  </style>
+  <noscript>
+    <style>#__bundler_loading { display: none; }</style>
+    <div style="position:fixed;bottom:12px;left:12px;font:13px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#999;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);z-index:10000;">
+      This page requires JavaScript to display.
+    </div>
+  </noscript>
+</head>
+<body>
+  <div id="__bundler_thumbnail">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="tg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff8e8"></stop>
+        <stop offset="60%" stop-color="#f5e6c4"></stop>
+        <stop offset="100%" stop-color="#c9b088"></stop>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="800" fill="#0a0a25"></rect>
+    <circle cx="600" cy="400" r="220" fill="url(#tg)"></circle>
+    <circle cx="540" cy="360" r="34" fill="#8a6a5a" opacity="0.35"></circle>
+    <circle cx="660" cy="370" r="30" fill="#8a6a5a" opacity="0.35"></circle>
+    <circle cx="600" cy="450" r="14" fill="#8a6a5a" opacity="0.45"></circle>
+  </svg>
+</div>
+  <div id="__bundler_loading">Unpacking...</div>
+
+  <script>
+    
+document.addEventListener('DOMContentLoaded', async function() {
+  const loading = document.getElementById('__bundler_loading');
+  function setStatus(msg) { if (loading) loading.textContent = msg; }
+
+  // Error sink persists across replaceWith since it's on window, not the DOM.
+  window.addEventListener('error', function(e) {
+    var p = document.body || document.documentElement;
+    var d = document.getElementById('__bundler_err') || p.appendChild(document.createElement('div'));
+    d.id = '__bundler_err';
+    d.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;font:12px/1.4 ui-monospace,monospace;background:#2a1215;color:#ff8a80;padding:10px 14px;border-radius:8px;border:1px solid #5c2b2e;z-index:99999;white-space:pre-wrap;max-height:40vh;overflow:auto';
+    d.textContent = (d.textContent ? d.textContent + String.fromCharCode(10) : '') +
+      '[bundle] ' + (e.message || e.type) +
+      (e.filename ? ' (' + e.filename.slice(0, 60) + ':' + e.lineno + ')' : '');
+  }, true);
+
+  try {
+    const manifestEl = document.querySelector('script[type="__bundler/manifest"]');
+    const templateEl = document.querySelector('script[type="__bundler/template"]');
+    if (!manifestEl || !templateEl) {
+      setStatus('Error: missing bundle data');
+      console.error('[bundler] Missing script tags — manifestEl:', !!manifestEl, 'templateEl:', !!templateEl);
+      return;
+    }
+
+    const manifest = JSON.parse(manifestEl.textContent);
+    let template = JSON.parse(templateEl.textContent);
+
+    const uuids = Object.keys(manifest);
+    setStatus('Unpacking ' + uuids.length + ' assets...');
+
+    const blobUrls = {};
+    await Promise.all(uuids.map(async (uuid) => {
+      const entry = manifest[uuid];
+      try {
+        const binaryStr = atob(entry.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+        let finalBytes = bytes;
+        if (entry.compressed) {
+          if (typeof DecompressionStream !== 'undefined') {
+            const ds = new DecompressionStream('gzip');
+            const writer = ds.writable.getWriter();
+            const reader = ds.readable.getReader();
+            writer.write(bytes);
+            writer.close();
+            const chunks = [];
+            let totalLen = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunks.push(value);
+              totalLen += value.length;
+            }
+            finalBytes = new Uint8Array(totalLen);
+            let offset = 0;
+            for (const chunk of chunks) { finalBytes.set(chunk, offset); offset += chunk.length; }
+          } else {
+            console.warn('DecompressionStream not available, asset ' + uuid + ' may not render');
+          }
+        }
+
+        blobUrls[uuid] = URL.createObjectURL(new Blob([finalBytes], { type: entry.mime }));
+      } catch (err) {
+        console.error('Failed to decode asset ' + uuid + ':', err);
+        blobUrls[uuid] = URL.createObjectURL(new Blob([], { type: entry.mime }));
+      }
+    }));
+
+    const extResEl = document.querySelector('script[type="__bundler/ext_resources"]');
+    const extResources = extResEl ? JSON.parse(extResEl.textContent) : [];
+    const resourceMap = {};
+    for (const entry of extResources) {
+      if (blobUrls[entry.uuid]) resourceMap[entry.id] = blobUrls[entry.uuid];
+    }
+
+    setStatus('Rendering...');
+    for (const uuid of uuids) template = template.split(uuid).join(blobUrls[uuid]);
+
+    // Strip integrity + crossorigin — blob URLs from a file:// document inherit
+    // a null origin, so crossorigin forces a CORS fetch that SRI then rejects.
+    // The manifest bytes are ours; SRI protects against CDN compromise, not this.
+    template = template.replace(/\s+integrity="[^"]*"/gi, '').replace(/\s+crossorigin="[^"]*"/gi, '');
+
+    const resourceScript = '<script>window.__resources = ' +
+      JSON.stringify(resourceMap).split('</' + 'script>').join('<\\/' + 'script>') +
+      ';</' + 'script>';
+    // Inject after <head> so the DOCTYPE stays first; prepending the script
+    // would push the parser into quirks mode. DOMParser always emits a <head>
+    // (synthesizing one if the source HTML omitted it) but may carry
+    // attributes through, so match the full opening tag. slice() rather than
+    // replace() keeps us clear of $-pattern substitution in resourceScript.
+    const headOpen = template.match(/<head[^>]*>/i);
+    if (headOpen) {
+      const i = headOpen.index + headOpen[0].length;
+      template = template.slice(0, i) + resourceScript + template.slice(i);
+    }
+
+    // Parse the template and swap the root element. Scripts inserted via
+    // DOMParser/replaceWith are inert per spec — re-create each with
+    // createElement so they execute, awaiting onload for src scripts to
+    // preserve ordering (React before ReactDOM before Babel before text/babel).
+    const doc = new DOMParser().parseFromString(template, 'text/html');
+    document.documentElement.replaceWith(doc.documentElement);
+    const dead = Array.from(document.scripts);
+    for (const old of dead) {
+      const s = document.createElement('script');
+      for (const a of old.attributes) s.setAttribute(a.name, a.value);
+      s.textContent = old.textContent;
+      // text/babel scripts with a src: fetch and inline. transformScriptTags
+      // does XHR against the src, but blob:null/ from a file:// origin is
+      // silently dropped. Inlining makes it a plain inline babel script,
+      // which transformScriptTags handles unconditionally.
+      if ((s.type === 'text/babel' || s.type === 'text/jsx') && s.src) {
+        const r = await fetch(s.src);
+        s.textContent = await r.text();
+        s.removeAttribute('src');
+      }
+      const p = s.src ? new Promise(function(r) { s.onload = s.onerror = r; }) : null;
+      old.replaceWith(s);
+      if (p) await p;
+    }
+    // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
+    // which fired before we swapped the document. Trigger manually if present.
+    if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
+      window.Babel.transformScriptTags();
+    }
+  } catch (err) {
+    setStatus('Error unpacking: ' + err.message);
+    console.error('Bundle unpack error:', err);
+  }
+});
+
+  </script>
+
+  <script type="__bundler/manifest">
+{}
+  </script>
+
+  <script type="__bundler/ext_resources">
+[]
+  </script>
+
+  <script type="__bundler/template">
+"<!DOCTYPE html>\n<html lang=\"en\"><head>\n<meta charset=\"UTF-8\">\n<title>Midnight Desert<\u002Ftitle>\n<style>\n  html, body {\n    margin: 0;\n    padding: 0;\n    width: 100%;\n    height: 100%;\n    overflow: hidden;\n    background: #05060f;\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n  }\n\n  .scene {\n    position: fixed;\n    inset: 0;\n    width: 100vw;\n    height: 100vh;\n    overflow: hidden;\n  }\n\n  /* ---------- SKY ---------- */\n  .sky {\n    position: absolute;\n    inset: 0;\n    background:\n      radial-gradient(ellipse 80% 60% at 72% 28%, rgba(120, 110, 180, 0.22) 0%, rgba(60, 50, 110, 0.05) 35%, transparent 70%),\n      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(90, 70, 120, 0.18) 0%, transparent 55%),\n      linear-gradient(180deg,\n        #050616 0%,\n        #0a0a25 22%,\n        #15123a 48%,\n        #251a45 72%,\n        #2e1f4d 90%,\n        #38244f 100%);\n  }\n\n  /* ---------- STARS ---------- */\n  .stars {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n  }\n  .stars svg { width: 100%; height: 100%; display: block; }\n  .star { fill: #fff; }\n  @keyframes twinkle {\n    0%, 100% { opacity: var(--o, 0.8); }\n    50%      { opacity: 0.15; }\n  }\n\n  /* ---------- MOON ---------- */\n  .moon-wrap {\n    position: absolute;\n    top: 9%;\n    right: 18%;\n    width: 280px;\n    height: 280px;\n    pointer-events: none;\n  }\n  .moon-glow {\n    position: absolute;\n    inset: -120%;\n    background: radial-gradient(circle at center,\n      rgba(255, 240, 210, 0.28) 0%,\n      rgba(245, 220, 180, 0.15) 18%,\n      rgba(180, 150, 200, 0.08) 35%,\n      rgba(120, 100, 160, 0.03) 55%,\n      transparent 70%);\n    filter: blur(2px);\n  }\n  .moon {\n    position: absolute;\n    inset: 0;\n    border-radius: 50%;\n    background:\n      radial-gradient(circle at 38% 38%, #fff8e8 0%, #f5e6c4 35%, #e8d2a8 65%, #c9b088 100%);\n    box-shadow:\n      0 0 60px 8px rgba(255, 240, 210, 0.25),\n      0 0 120px 20px rgba(220, 200, 240, 0.12),\n      inset -20px -25px 50px rgba(120, 90, 110, 0.35),\n      inset 12px 14px 30px rgba(255, 250, 230, 0.4);\n  }\n  .moon-craters {\n    position: absolute;\n    inset: 0;\n    border-radius: 50%;\n    overflow: hidden;\n    opacity: 0.55;\n  }\n  .crater {\n    position: absolute;\n    border-radius: 50%;\n    background: radial-gradient(circle at 35% 35%, rgba(160, 130, 110, 0.45) 0%, rgba(140, 110, 90, 0.25) 60%, transparent 100%);\n  }\n\n  /* delicate moon face — keep all values low opacity so it reads as natural maria */\n  .moon-face {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    transform: rotate(14deg);\n    transform-origin: 50% 50%;\n  }\n  .m-eye {\n    position: absolute;\n    border-radius: 50%;\n    background: radial-gradient(ellipse at 45% 40%,\n      rgba(110, 85, 80, 0.42) 0%,\n      rgba(130, 100, 90, 0.28) 45%,\n      rgba(150, 120, 105, 0.12) 75%,\n      transparent 100%);\n    filter: blur(1.2px);\n  }\n  .m-nose {\n    position: absolute;\n    border-radius: 50% / 40%;\n    background: radial-gradient(ellipse at 50% 50%,\n      rgba(130, 100, 90, 0.22) 0%,\n      rgba(150, 120, 105, 0.12) 60%,\n      transparent 100%);\n    filter: blur(1.4px);\n  }\n  .m-mouth {\n    position: absolute;\n    width: 76%;\n    height: 30%;\n    top: 56%;\n    left: 12%;\n    filter: blur(0.8px);\n    opacity: 0.9;\n  }\n  .m-mouth-crater {\n    position: absolute;\n    width: 18%;\n    height: 18%;\n    top: 68%;\n    left: 41%;\n    border-radius: 50%;\n    background: radial-gradient(circle at 38% 35%,\n      rgba(110, 85, 75, 0.55) 0%,\n      rgba(140, 110, 90, 0.35) 55%,\n      rgba(170, 140, 115, 0.15) 80%,\n      transparent 100%);\n    filter: blur(1px);\n  }\n\n  /* ---------- BIRDS ---------- */\n  .birds {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n  }\n  .bird-flock {\n    position: absolute;\n    will-change: transform;\n  }\n  .bird {\n    position: absolute;\n    width: 100%;\n    height: 100%;\n  }\n  .bird svg { width: 100%; height: 100%; display: block; overflow: visible; }\n  .bird path {\n    fill: none;\n    stroke: #0a0a1a;\n    stroke-width: 2;\n    stroke-linecap: round;\n    stroke-linejoin: round;\n  }\n\n  @keyframes flyAcross {\n    from { transform: translateX(-12vw); }\n    to   { transform: translateX(112vw); }\n  }\n  @keyframes flap {\n    0%, 100% { d: path(\"M 0 8 Q 8 0 16 8 Q 24 0 32 8\"); }\n    50%      { d: path(\"M 0 4 Q 8 12 16 4 Q 24 12 32 4\"); }\n  }\n  /* Fallback flap via transform on the wing path container */\n  .bird .wing {\n    transform-origin: center;\n    animation: wingbeat 1.4s ease-in-out infinite;\n  }\n  @keyframes wingbeat {\n    0%, 100% { transform: scaleY(1); }\n    50%      { transform: scaleY(0.35); }\n  }\n\n  /* ---------- DUNES (layered, far → near) ---------- */\n  .dunes {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n  }\n  .dune-layer {\n    position: absolute;\n    left: -2%;\n    right: -2%;\n    bottom: 0;\n    width: 104%;\n  }\n  .dune-layer svg {\n    width: 100%;\n    height: auto;\n    display: block;\n  }\n\n  /* ---------- FOREGROUND OASIS ---------- */\n  .oasis {\n    position: absolute;\n    bottom: 0;\n    left: 50%;\n    transform: translateX(-50%);\n    width: 720px;\n    max-width: 92vw;\n    height: 38vh;\n    min-height: 280px;\n    pointer-events: none;\n  }\n\n  /* oasis glow halo (animated) */\n  .oasis-glow {\n    position: absolute;\n    bottom: 2%;\n    left: 50%;\n    transform: translateX(-50%);\n    width: 90%;\n    height: 38%;\n    border-radius: 50%;\n    background: radial-gradient(ellipse at center,\n      rgba(180, 200, 240, 0.28) 0%,\n      rgba(140, 160, 220, 0.16) 28%,\n      rgba(100, 120, 200, 0.08) 50%,\n      transparent 75%);\n    filter: blur(6px);\n    pointer-events: none;\n    animation: oasisGlow 5.5s ease-in-out infinite;\n  }\n  @keyframes oasisGlow {\n    0%, 100% { opacity: 0.65; transform: translateX(-50%) scale(1); }\n    50%      { opacity: 1;    transform: translateX(-50%) scale(1.08); }\n  }\n\n  /* water pool */\n  .pool {\n    position: absolute;\n    bottom: 6%;\n    left: 50%;\n    transform: translateX(-50%);\n    width: 78%;\n    height: 22%;\n    border-radius: 50%;\n    background:\n      radial-gradient(ellipse at center,\n        rgba(180, 200, 230, 0.22) 0%,\n        rgba(110, 130, 180, 0.18) 30%,\n        rgba(40, 50, 90, 0.45) 70%,\n        rgba(15, 12, 35, 0.85) 100%);\n    box-shadow:\n      0 -2px 18px rgba(180, 190, 230, 0.18),\n      inset 0 4px 14px rgba(220, 230, 250, 0.12),\n      inset 0 -8px 20px rgba(0, 0, 0, 0.55);\n    overflow: hidden;\n  }\n  .pool::before {\n    /* moon reflection */\n    content: \"\";\n    position: absolute;\n    top: 18%;\n    left: 50%;\n    transform: translateX(-50%);\n    width: 38%;\n    height: 14%;\n    border-radius: 50%;\n    background: radial-gradient(ellipse at center,\n      rgba(255, 240, 210, 0.55) 0%,\n      rgba(255, 240, 210, 0.18) 50%,\n      transparent 100%);\n    filter: blur(2px);\n    animation: shimmer 6s ease-in-out infinite;\n  }\n  .pool::after {\n    /* gentle horizontal ripple highlight */\n    content: \"\";\n    position: absolute;\n    top: 42%;\n    left: 14%;\n    right: 14%;\n    height: 1.5px;\n    background: linear-gradient(90deg,\n      transparent 0%,\n      rgba(220, 220, 240, 0.35) 50%,\n      transparent 100%);\n    filter: blur(0.5px);\n    animation: ripple 7s ease-in-out infinite;\n  }\n  @keyframes shimmer {\n    0%, 100% { opacity: 0.85; transform: translateX(-50%) scaleX(1); }\n    50%      { opacity: 1;    transform: translateX(-50%) scaleX(1.06); }\n  }\n  @keyframes ripple {\n    0%, 100% { opacity: 0.4; transform: translateX(0); }\n    50%      { opacity: 0.8; transform: translateX(8px); }\n  }\n\n  /* sand mound around oasis */\n  .mound {\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 32%;\n  }\n\n  /* palms */\n  .palms {\n    position: absolute;\n    inset: 0;\n  }\n  .palm {\n    position: absolute;\n    bottom: 14%;\n    transform-origin: bottom center;\n  }\n  .palm svg {\n    width: 100%;\n    height: 100%;\n    display: block;\n    overflow: visible;\n  }\n  .palm-1 { left: -7%; width: 150px; height: 78%; animation: sway 7s ease-in-out infinite; }\n  .palm-2 { left: 3%;  width: 110px; height: 62%; animation: sway 8.5s ease-in-out infinite reverse; animation-delay: -1.2s; }\n  .palm-3 { right: -8%; width: 170px; height: 86%; animation: sway 9s ease-in-out infinite; animation-delay: -2s; }\n  .palm-4 { right: 2%; width: 95px;  height: 54%; animation: sway 7.8s ease-in-out infinite reverse; animation-delay: -0.6s; }\n\n  @keyframes sway {\n    0%, 100% { transform: rotate(-1.2deg); }\n    50%      { transform: rotate(1.2deg); }\n  }\n\n  /* small grass tufts */\n  .grass {\n    position: absolute;\n    bottom: 5%;\n    pointer-events: none;\n  }\n  .grass svg { width: 100%; height: 100%; overflow: visible; }\n\n  /* subtle film grain via vignette */\n  .vignette {\n    position: absolute;\n    inset: 0;\n    pointer-events: none;\n    background:\n      radial-gradient(ellipse 90% 70% at 50% 45%, transparent 50%, rgba(0,0,0,0.55) 100%);\n  }\n\n  /* haze along horizon line behind dunes for depth */\n  .haze {\n    position: absolute;\n    left: 0; right: 0;\n    bottom: 36vh;\n    height: 12vh;\n    background: linear-gradient(180deg,\n      transparent 0%,\n      rgba(70, 60, 110, 0.18) 60%,\n      rgba(50, 40, 90, 0.28) 100%);\n    filter: blur(8px);\n    pointer-events: none;\n  }\n<\u002Fstyle>\n<\u002Fhead>\n\n<body>\n\n<div class=\"scene\" data-screen-label=\"Midnight Desert\">\n\n  <!-- SKY -->\n  <div class=\"sky\"><\u002Fdiv>\n\n  <!-- STARS -->\n  <div class=\"stars\">\n    <svg viewBox=\"0 0 1600 900\" preserveAspectRatio=\"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\" id=\"starfield\"><\u002Fsvg>\n  <\u002Fdiv>\n\n  <!-- HAZE near horizon -->\n  <div class=\"haze\"><\u002Fdiv>\n\n  <!-- MOON -->\n  <div class=\"moon-wrap\">\n    <div class=\"moon-glow\"><\u002Fdiv>\n    <div class=\"moon\">\n      <div class=\"moon-craters\">\n        <!-- ambient maria / craters (restored) -->\n        <div class=\"crater\" style=\"width:36px;height:36px;top:74%;left:24%;opacity:0.55;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:22px;height:22px;top:82%;left:48%;opacity:0.5;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:48px;height:48px;top:64%;left:66%;opacity:0.55;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:14px;height:14px;top:18%;left:46%;opacity:0.5;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:18px;height:18px;top:12%;left:72%;opacity:0.45;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:10px;height:10px;top:24%;left:82%;opacity:0.45;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:12px;height:12px;top:50%;left:84%;opacity:0.4;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:9px;height:9px;top:84%;left:74%;opacity:0.4;\"><\u002Fdiv>\n        <div class=\"crater\" style=\"width:8px;height:8px;top:14%;left:20%;opacity:0.4;\"><\u002Fdiv>\n\n        <!-- delicate face: bigger eyes and mouth, no nose — drawn as low-contrast maria so it still reads as natural lunar texture -->\n        <div class=\"moon-face\">\n          <!-- left eye -->\n          <div class=\"m-eye\" style=\"width:54px;height:44px;top:28%;left:18%;\"><\u002Fdiv>\n          <!-- right eye -->\n          <div class=\"m-eye\" style=\"width:50px;height:40px;top:30%;left:58%;\"><\u002Fdiv>\n          <!-- where the mouth would be: a single crater -->\n          <div class=\"m-mouth-crater\"><\u002Fdiv>\n        <\u002Fdiv>\n      <\u002Fdiv>\n    <\u002Fdiv>\n  <\u002Fdiv>\n\n  <!-- BIRDS (background, slow) -->\n  <div class=\"birds\" id=\"birds\"><\u002Fdiv>\n\n  <!-- DUNES: far -->\n  <div class=\"dunes\">\n    <div class=\"dune-layer\" style=\"bottom: 33vh; opacity: 0.85;\">\n      <svg viewBox=\"0 0 1600 220\" preserveAspectRatio=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n        <defs>\n          <linearGradient id=\"duneFar\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0%\" stop-color=\"#1d1740\"><\u002Fstop>\n            <stop offset=\"100%\" stop-color=\"#15102f\"><\u002Fstop>\n          <\u002FlinearGradient>\n        <\u002Fdefs>\n        <path d=\"M0,140 C120,90 240,80 360,110 C480,140 580,170 720,150 C860,130 980,80 1120,95 C1260,110 1380,150 1500,135 C1560,128 1600,120 1600,120 L1600,220 L0,220 Z\" fill=\"url(#duneFar)\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n\n    <!-- DUNES: mid -->\n    <div class=\"dune-layer\" style=\"bottom: 22vh;\">\n      <svg viewBox=\"0 0 1600 260\" preserveAspectRatio=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n        <defs>\n          <linearGradient id=\"duneMid\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0%\" stop-color=\"#120c2a\"><\u002Fstop>\n            <stop offset=\"100%\" stop-color=\"#0b0820\"><\u002Fstop>\n          <\u002FlinearGradient>\n        <\u002Fdefs>\n        <path d=\"M0,160 C160,80 280,60 440,100 C600,140 720,210 880,180 C1040,150 1180,90 1340,120 C1460,143 1600,180 1600,180 L1600,260 L0,260 Z\" fill=\"url(#duneMid)\"><\u002Fpath>\n        <!-- moonlit ridge highlight -->\n        <path d=\"M0,160 C160,80 280,60 440,100 C600,140 720,210 880,180 C1040,150 1180,90 1340,120 C1460,143 1600,180 1600,180\" fill=\"none\" stroke=\"rgba(190,180,220,0.22)\" stroke-width=\"1.2\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n\n    <!-- DUNES: near -->\n    <div class=\"dune-layer\" style=\"bottom: 0;\">\n      <svg viewBox=\"0 0 1600 380\" preserveAspectRatio=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n        <defs>\n          <linearGradient id=\"duneNear\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0%\" stop-color=\"#080518\"><\u002Fstop>\n            <stop offset=\"100%\" stop-color=\"#03020a\"><\u002Fstop>\n          <\u002FlinearGradient>\n        <\u002Fdefs>\n        <path d=\"M0,200 C140,120 320,100 520,160 C720,220 880,280 1080,240 C1280,200 1440,140 1600,180 L1600,380 L0,380 Z\" fill=\"url(#duneNear)\"><\u002Fpath>\n        <!-- soft moonlit highlight on the crests -->\n        <path d=\"M0,200 C140,120 320,100 520,160 C720,220 880,280 1080,240 C1280,200 1440,140 1600,180\" fill=\"none\" stroke=\"rgba(170,160,210,0.18)\" stroke-width=\"1\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n  <\u002Fdiv>\n\n  <!-- FOREGROUND OASIS -->\n  <div class=\"oasis\">\n\n    <!-- sand mound -->\n    <div class=\"mound\">\n      <svg viewBox=\"0 0 720 120\" preserveAspectRatio=\"none\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width:100%;height:100%;display:block;\">\n        <defs>\n          <linearGradient id=\"moundGrad\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0%\" stop-color=\"#040310\"><\u002Fstop>\n            <stop offset=\"100%\" stop-color=\"#000005\"><\u002Fstop>\n          <\u002FlinearGradient>\n        <\u002Fdefs>\n        <path d=\"M0,60 C100,20 220,10 360,30 C500,50 620,18 720,52 L720,120 L0,120 Z\" fill=\"url(#moundGrad)\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n\n    <!-- animated oasis glow -->\n    <div class=\"oasis-glow\"><\u002Fdiv>\n\n    <!-- water pool -->\n    <div class=\"pool\"><\u002Fdiv>\n\n    <!-- grass tufts -->\n    <div class=\"grass\" style=\"left:8%; width:60px; height:26px;\">\n      <svg viewBox=\"0 0 60 26\">\n        <path d=\"M5,26 Q8,8 11,26 M14,26 Q18,4 22,26 M26,26 Q29,10 32,26 M36,26 Q40,6 44,26 M48,26 Q51,12 54,26\" stroke=\"#020108\" stroke-width=\"1.2\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n    <div class=\"grass\" style=\"right:7%; width:70px; height:22px;\">\n      <svg viewBox=\"0 0 70 22\">\n        <path d=\"M4,22 Q7,6 10,22 M14,22 Q18,2 22,22 M26,22 Q29,9 32,22 M36,22 Q40,5 44,22 M48,22 Q52,9 56,22 M60,22 Q63,7 66,22\" stroke=\"#020108\" stroke-width=\"1.2\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n      <\u002Fsvg>\n    <\u002Fdiv>\n    <!-- palms -->\n    <div class=\"palms\">\n      <!-- Palm 1 (left, large) -->\n      <div class=\"palm palm-1\">\n        <svg viewBox=\"0 0 150 280\" preserveAspectRatio=\"xMidYMax meet\">\n          <!-- trunk -->\n          <path d=\"M72,280 C70,220 76,160 78,100 C80,60 76,30 74,10\" stroke=\"#020108\" stroke-width=\"6\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n          <!-- trunk segments -->\n          <g stroke=\"#0a0612\" stroke-width=\"1\" opacity=\"0.6\">\n            <line x1=\"68\" y1=\"240\" x2=\"80\" y2=\"238\"><\u002Fline>\n            <line x1=\"69\" y1=\"210\" x2=\"81\" y2=\"208\"><\u002Fline>\n            <line x1=\"71\" y1=\"180\" x2=\"83\" y2=\"178\"><\u002Fline>\n            <line x1=\"73\" y1=\"150\" x2=\"84\" y2=\"148\"><\u002Fline>\n            <line x1=\"74\" y1=\"120\" x2=\"85\" y2=\"118\"><\u002Fline>\n            <line x1=\"75\" y1=\"90\" x2=\"85\" y2=\"88\"><\u002Fline>\n            <line x1=\"75\" y1=\"60\" x2=\"84\" y2=\"58\"><\u002Fline>\n          <\u002Fg>\n          <!-- fronds -->\n          <g fill=\"#000\" stroke=\"#000\" stroke-linejoin=\"round\">\n            <path d=\"M74,12 C50,2 22,6 4,28 C26,18 50,18 70,26 Z\"><\u002Fpath>\n            <path d=\"M74,12 C100,0 132,6 148,30 C124,18 98,18 78,26 Z\"><\u002Fpath>\n            <path d=\"M74,12 C58,18 36,40 20,72 C46,52 64,40 74,32 Z\"><\u002Fpath>\n            <path d=\"M74,12 C92,18 116,42 132,78 C108,54 88,42 78,32 Z\"><\u002Fpath>\n            <path d=\"M74,12 C66,28 58,58 56,92 C66,68 72,46 76,30 Z\"><\u002Fpath>\n            <path d=\"M74,12 C82,30 90,60 96,96 C84,68 78,46 76,30 Z\"><\u002Fpath>\n          <\u002Fg>\n          <!-- coconuts -->\n          <circle cx=\"72\" cy=\"20\" r=\"3\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"78\" cy=\"22\" r=\"3\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"68\" cy=\"24\" r=\"2.5\" fill=\"#000\"><\u002Fcircle>\n        <\u002Fsvg>\n      <\u002Fdiv>\n\n      <!-- Palm 2 (mid, smaller) -->\n      <div class=\"palm palm-2\">\n        <svg viewBox=\"0 0 110 220\" preserveAspectRatio=\"xMidYMax meet\">\n          <path d=\"M52,220 C50,170 56,120 56,70 C56,40 54,20 52,8\" stroke=\"#020108\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n          <g stroke=\"#0a0612\" stroke-width=\"1\" opacity=\"0.6\">\n            <line x1=\"46\" y1=\"190\" x2=\"58\" y2=\"188\"><\u002Fline>\n            <line x1=\"48\" y1=\"160\" x2=\"60\" y2=\"158\"><\u002Fline>\n            <line x1=\"50\" y1=\"130\" x2=\"60\" y2=\"128\"><\u002Fline>\n            <line x1=\"51\" y1=\"100\" x2=\"61\" y2=\"98\"><\u002Fline>\n            <line x1=\"52\" y1=\"70\" x2=\"60\" y2=\"68\"><\u002Fline>\n          <\u002Fg>\n          <g fill=\"#000\" stroke=\"#000\" stroke-linejoin=\"round\">\n            <path d=\"M52,10 C32,2 12,6 0,24 C18,16 36,16 50,22 Z\"><\u002Fpath>\n            <path d=\"M52,10 C72,2 96,8 108,28 C90,18 70,18 56,24 Z\"><\u002Fpath>\n            <path d=\"M52,10 C40,16 24,34 14,60 C32,42 46,32 52,26 Z\"><\u002Fpath>\n            <path d=\"M52,10 C66,16 84,36 96,64 C78,46 62,34 54,26 Z\"><\u002Fpath>\n            <path d=\"M52,10 C46,28 42,52 42,80 C50,58 52,40 54,26 Z\"><\u002Fpath>\n          <\u002Fg>\n          <circle cx=\"52\" cy=\"16\" r=\"2.5\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"56\" cy=\"18\" r=\"2.5\" fill=\"#000\"><\u002Fcircle>\n        <\u002Fsvg>\n      <\u002Fdiv>\n\n      <!-- Palm 3 (right, largest) -->\n      <div class=\"palm palm-3\">\n        <svg viewBox=\"0 0 170 320\" preserveAspectRatio=\"xMidYMax meet\">\n          <path d=\"M82,320 C84,250 78,180 80,110 C82,70 86,30 88,10\" stroke=\"#020108\" stroke-width=\"6.5\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n          <g stroke=\"#0a0612\" stroke-width=\"1\" opacity=\"0.6\">\n            <line x1=\"78\" y1=\"280\" x2=\"92\" y2=\"282\"><\u002Fline>\n            <line x1=\"78\" y1=\"245\" x2=\"91\" y2=\"247\"><\u002Fline>\n            <line x1=\"79\" y1=\"210\" x2=\"91\" y2=\"212\"><\u002Fline>\n            <line x1=\"80\" y1=\"175\" x2=\"91\" y2=\"177\"><\u002Fline>\n            <line x1=\"82\" y1=\"140\" x2=\"92\" y2=\"142\"><\u002Fline>\n            <line x1=\"84\" y1=\"105\" x2=\"92\" y2=\"107\"><\u002Fline>\n            <line x1=\"85\" y1=\"70\" x2=\"92\" y2=\"72\"><\u002Fline>\n          <\u002Fg>\n          <g fill=\"#000\" stroke=\"#000\" stroke-linejoin=\"round\">\n            <path d=\"M88,12 C62,0 30,4 6,30 C32,18 60,18 84,26 Z\"><\u002Fpath>\n            <path d=\"M88,12 C118,0 150,8 168,32 C140,18 112,18 92,26 Z\"><\u002Fpath>\n            <path d=\"M88,12 C68,18 42,46 22,82 C52,58 74,42 88,32 Z\"><\u002Fpath>\n            <path d=\"M88,12 C108,18 134,46 152,86 C124,58 102,42 90,32 Z\"><\u002Fpath>\n            <path d=\"M88,12 C78,32 70,66 68,104 C80,76 86,52 90,30 Z\"><\u002Fpath>\n            <path d=\"M88,12 C98,32 108,66 114,108 C100,76 92,52 90,30 Z\"><\u002Fpath>\n            <path d=\"M88,12 C76,8 62,2 50,4 C66,12 78,18 86,26 Z\" opacity=\"0.85\"><\u002Fpath>\n          <\u002Fg>\n          <circle cx=\"86\" cy=\"20\" r=\"3.5\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"92\" cy=\"22\" r=\"3.5\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"82\" cy=\"24\" r=\"3\" fill=\"#000\"><\u002Fcircle>\n          <circle cx=\"90\" cy=\"28\" r=\"2.5\" fill=\"#000\"><\u002Fcircle>\n        <\u002Fsvg>\n      <\u002Fdiv>\n\n      <!-- Palm 4 (small, behind) -->\n      <div class=\"palm palm-4\">\n        <svg viewBox=\"0 0 95 200\" preserveAspectRatio=\"xMidYMax meet\">\n          <path d=\"M46,200 C44,150 48,100 48,60 C48,30 46,16 44,8\" stroke=\"#020108\" stroke-width=\"4\" fill=\"none\" stroke-linecap=\"round\"><\u002Fpath>\n          <g stroke=\"#0a0612\" stroke-width=\"1\" opacity=\"0.6\">\n            <line x1=\"40\" y1=\"170\" x2=\"52\" y2=\"172\"><\u002Fline>\n            <line x1=\"42\" y1=\"140\" x2=\"54\" y2=\"142\"><\u002Fline>\n            <line x1=\"44\" y1=\"110\" x2=\"54\" y2=\"112\"><\u002Fline>\n            <line x1=\"46\" y1=\"80\" x2=\"54\" y2=\"82\"><\u002Fline>\n          <\u002Fg>\n          <g fill=\"#020108\" stroke=\"#020108\" stroke-linejoin=\"round\">\n            <path d=\"M46,10 C28,2 10,6 0,22 C16,14 32,14 44,20 Z\"><\u002Fpath>\n            <path d=\"M46,10 C62,2 84,8 94,26 C78,16 60,16 48,22 Z\"><\u002Fpath>\n            <path d=\"M46,10 C36,16 22,32 14,56 C30,40 42,30 46,24 Z\"><\u002Fpath>\n            <path d=\"M46,10 C58,16 74,34 84,60 C70,44 56,32 48,24 Z\"><\u002Fpath>\n            <path d=\"M46,10 C42,28 38,52 38,76 C44,56 46,38 48,24 Z\"><\u002Fpath>\n          <\u002Fg>\n        <\u002Fsvg>\n      <\u002Fdiv>\n    <\u002Fdiv>\n  <\u002Fdiv>\n\n  <!-- vignette -->\n  <div class=\"vignette\"><\u002Fdiv>\n\n<\u002Fdiv>\n\n<script>\n(function() {\n  // ---------- STARFIELD ----------\n  const sf = document.getElementById('starfield');\n  const W = 1600, H = 900;\n  const NS = 'http://www.w3.org/2000/svg';\n  const NUM = 180;\n  for (let i = 0; i < NUM; i++) {\n    const x = Math.random() * W;\n    // Stars get sparser near horizon; bias upward\n    const yPct = Math.pow(Math.random(), 1.6); // 0 (top) bias\n    const y = yPct * H * 0.78; // keep above horizon\n    const r = Math.random() < 0.92 ? Math.random() * 1.1 + 0.3 : Math.random() * 1.8 + 1.2;\n    const o = Math.random() * 0.6 + 0.35;\n    const c = document.createElementNS(NS, 'circle');\n    c.setAttribute('cx', x.toFixed(1));\n    c.setAttribute('cy', y.toFixed(1));\n    c.setAttribute('r', r.toFixed(2));\n    c.setAttribute('class', 'star');\n    c.setAttribute('style',\n      `--o:${o.toFixed(2)};opacity:${o};` +\n      `animation: twinkle ${(2 + Math.random() * 5).toFixed(2)}s ease-in-out ${(Math.random()*4).toFixed(2)}s infinite;`\n    );\n    sf.appendChild(c);\n  }\n  // A couple of brighter \"diamond\" stars\n  for (let i = 0; i < 6; i++) {\n    const x = Math.random() * W;\n    const y = Math.random() * H * 0.5 + 40;\n    const c = document.createElementNS(NS, 'circle');\n    c.setAttribute('cx', x.toFixed(1));\n    c.setAttribute('cy', y.toFixed(1));\n    c.setAttribute('r', 1.6);\n    c.setAttribute('fill', '#fff');\n    c.setAttribute('style', `filter: drop-shadow(0 0 4px rgba(255,255,255,0.9)); animation: twinkle ${(3 + Math.random()*3).toFixed(2)}s ease-in-out infinite;`);\n    sf.appendChild(c);\n  }\n\n  // ---------- BIRDS ----------\n  const birdsRoot = document.getElementById('birds');\n\n  function birdSVG(size) {\n    const svg = `\n      <svg viewBox=\"0 0 36 16\" preserveAspectRatio=\"xMidYMid meet\">\n        <g class=\"wing\">\n          <path d=\"M 1 9 Q 9 1 18 9 Q 27 1 35 9\" />\n        <\u002Fg>\n      <\u002Fsvg>`;\n    return svg;\n  }\n\n  // Create N flocks at varying altitudes, sizes, speeds, delays\n  const flocks = [\n    // {topPct, sizePx, durationS, delayS, count, spreadPx}\n    { top: 14, size: 44, dur: 95, delay:  0,   count: 3, gap: 52, opacity: 0.85, flapDur: 1.6 },\n    { top: 22, size: 32, dur: 130, delay: -28, count: 4, gap: 44, opacity: 0.7,  flapDur: 1.9 },\n    { top: 30, size: 24, dur: 160, delay: -65, count: 2, gap: 36, opacity: 0.55, flapDur: 2.2 },\n    { top: 18, size: 20, dur: 185, delay: -110, count: 3, gap: 32, opacity: 0.45, flapDur: 2.4 },\n    { top: 38, size: 28, dur: 150, delay: -50, count: 2, gap: 40, opacity: 0.5,  flapDur: 2.0 },\n  ];\n\n  flocks.forEach((f, fi) => {\n    for (let i = 0; i < f.count; i++) {\n      const wrap = document.createElement('div');\n      wrap.className = 'bird-flock';\n      // stagger horizontally + slight vertical jitter\n      const jitterY = (Math.random() - 0.5) * 18;\n      const offsetX = -i * f.gap;  // staggered behind leader\n      wrap.style.top = `calc(${f.top}% + ${jitterY}px)`;\n      wrap.style.left = `${offsetX}px`;\n      wrap.style.width = f.size + 'px';\n      wrap.style.height = (f.size * 0.45) + 'px';\n      wrap.style.opacity = f.opacity;\n      wrap.style.animation = `flyAcross ${f.dur}s linear ${f.delay - i * 0.4}s infinite`;\n\n      const bird = document.createElement('div');\n      bird.className = 'bird';\n      bird.innerHTML = birdSVG();\n      // randomize each bird's flap rate slightly\n      const wing = bird.querySelector('.wing');\n      if (wing) {\n        wing.style.animationDuration = (f.flapDur + (Math.random() * 0.4 - 0.2)).toFixed(2) + 's';\n        wing.style.animationDelay = (-Math.random() * 1.5).toFixed(2) + 's';\n      }\n      wrap.appendChild(bird);\n      birdsRoot.appendChild(wrap);\n    }\n  });\n})();\n<\u002Fscript>\n\n\n\n<\u002Fbody><\u002Fhtml>"
+  </script>
+</body>
+</html>
